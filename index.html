@@ -102,7 +102,7 @@ textarea {
     <div class="main-wrapper">
         <div class="app-container">
             <h2 id="formHeader">Whisper...</h2>
-            <p class="subtitle" id="formSubtitle">Anonymously send your encypted message.</p>
+            <p class="subtitle" id="formSubtitle">Anonymously send an encypted message.</p>
 
             <form id="messageForm">
                 <div class="form-group">
@@ -110,8 +110,8 @@ textarea {
                     <input type="text" id="title" placeholder="Enter a brief subject..." required>
                 </div>
                 <div class="form-group">
-					<label for="message">Transmission</label>
-					<textarea id="message" placeholder="Type your secure message here..." maxlength="35000" required></textarea>
+					<label for="message">Message</label>
+					<textarea id="message" placeholder="Type your message here..." maxlength="35000" required></textarea>
 					<div id="charCounter" class="char-counter">0 / 35000</div>
 				</div>
                 <div class="button-group">
@@ -301,7 +301,7 @@ messageInput.addEventListener('input', function() {
         function resetFormState() {
             form.reset(); editingId = null;
             titleInput.classList.remove('is-encrypted'); messageInput.classList.remove('is-encrypted');
-            document.getElementById('formHeader').innerText = "Whisper..."; document.getElementById('formSubtitle').innerText = "Securely transmit your message.";
+            document.getElementById('formHeader').innerText = "Whisper..."; //document.getElementById('formSubtitle').innerText = "Securely transmit your message.";
             sendBtn.style.display = 'block'; retractBtn.style.display = 'none'; updateBtn.style.display = 'none'; cancelBtn.innerText = "Clear";
             sendBtn.innerText = "Encrypt & Send"; updateBtn.innerText = "Encrypt & Update";
             setButtonsDisabled(false);
