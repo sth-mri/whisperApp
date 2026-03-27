@@ -3,129 +3,181 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anonymous & Encrypted Messenger</title>
-    <!-- Load CryptoJS (for large text) and JSEncrypt (for Public Key) -->
+    <title>Whisper App</title>
+    
+    <!-- Load CryptoJS and JSEncrypt for Encryption -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jsencrypt/3.3.2/jsencrypt.min.js"></script>
     
+    <!-- Load TensorFlow.js and Toxicity Model for Extreme AI Moderation -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/toxicity"></script>
+    
     <style>
-        /* CSS styling for a modern, dark, anonymous look */
+        /* CSS styling for a bright, positive, and welcoming look */
         :root {
-            --primary-gradient: linear-gradient(135deg, #6b21a8, #4c1d95);
-            --primary-hover: linear-gradient(135deg, #7e22ce, #581c87);
-            --primary-glow: rgba(107, 33, 168, 0.5);
-            --danger-gradient: linear-gradient(135deg, #991b1b, #7f1d1d);
-            --danger-hover: linear-gradient(135deg, #b91c1c, #991b1b);
-            --danger-glow: rgba(153, 27, 27, 0.5);
-            --edit-gradient: linear-gradient(135deg, #b45309, #92400e);
-            --edit-hover: linear-gradient(135deg, #d97706, #b45309);
-            --card-bg: rgba(20, 20, 25, 0.75);
-            --card-border: rgba(255, 255, 255, 0.08);
-            --input-bg: rgba(0, 0, 0, 0.4);
-            --input-border: rgba(255, 255, 255, 0.15);
-            --input-focus: #9333ea;
-            --text-main: #f9fafb;
-            --text-muted: #9ca3af;
+            --primary-gradient: linear-gradient(135deg, #10b981, #059669); 
+            --primary-hover: linear-gradient(135deg, #34d399, #10b981);
+            --primary-shadow: rgba(16, 185, 129, 0.4);
+            --danger-gradient: linear-gradient(135deg, #ef4444, #dc2626); 
+            --danger-hover: linear-gradient(135deg, #f87171, #ef4444);
+            --danger-shadow: rgba(239, 68, 68, 0.4);
+            --edit-gradient: linear-gradient(135deg, #3b82f6, #2563eb); 
+            --edit-hover: linear-gradient(135deg, #60a5fa, #3b82f6);
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --card-border: rgba(255, 255, 255, 0.6);
+            --input-bg: rgba(255, 255, 255, 0.9);
+            --input-border: rgba(209, 213, 219, 0.8);
+            --input-focus: #10b981;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
         }
 
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: linear-gradient(to bottom, rgba(15, 23, 42, 0.85), rgba(0, 0, 0, 0.95)), url('https://images.unsplash.com/photo-1526243741027-444d633d7365?auto=format&fit=crop&w=1920&q=80'); background-size: cover; background-position: center; background-attachment: fixed; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; margin: 0; padding: 30px 20px; box-sizing: border-box; color: var(--text-main); }
-        .main-wrapper { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 25px; }
-        .app-container { background-color: var(--card-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 30px 25px; border-radius: 16px; border: 1px solid var(--card-border); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
-        h2 { margin-top: 0; text-align: center; font-size: 1.6rem; letter-spacing: 0.5px; }
-        h3 { margin-top: 0; font-size: 1.1rem; margin-bottom: 10px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px; color: #e5e7eb;}
-        p.subtitle { text-align: center; color: var(--text-muted); font-size: 0.95rem; margin-bottom: 25px; }
-        .form-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.9rem; color: #d1d5db; letter-spacing: 0.3px; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            background: linear-gradient(to bottom, rgba(224, 242, 254, 0.6), rgba(255, 255, 255, 0.2)), url('https://images.unsplash.com/photo-1509803874385-db7c23652552?auto=format&fit=crop&w=1920&q=80'); 
+            background-size: cover; 
+            background-position: center; 
+            background-attachment: fixed; 
+            display: flex; 
+            justify-content: center; 
+            align-items: flex-start; 
+            min-height: 100vh; 
+            margin: 0; 
+            padding: 30px 20px; 
+            box-sizing: border-box; 
+            color: var(--text-main); 
+        }
+
+        .main-wrapper { width: 100%; max-width: 450px; display: flex; flex-direction: column; gap: 20px; }
         
-        input[type="text"], textarea { width: 100%; padding: 14px; background-color: var(--input-bg); border: 1px solid var(--input-border); border-radius: 10px; color: white; font-size: 1rem; font-family: inherit; box-sizing: border-box; transition: all 0.3s ease; }
-        .is-encrypted { font-family: monospace !important; color: #34d399 !important; font-size: 0.85rem !important;}
-        input::placeholder, textarea::placeholder { color: rgba(255, 255, 255, 0.3); }
-        input[type="text"]:focus, textarea:focus { outline: none; border-color: var(--input-focus); box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.25); background-color: rgba(0, 0, 0, 0.6); }
-        textarea { resize: vertical; min-height: 120px; max-height: 300px; overflow-y: auto; }
-        ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; } ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+        .quote-card {
+            background-color: var(--card-bg); 
+            backdrop-filter: blur(12px); 
+            -webkit-backdrop-filter: blur(12px); 
+            padding: 20px; 
+            border-radius: 16px; 
+            border: 1px solid var(--card-border); 
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .quote-text { font-size: 1.05rem; font-style: italic; color: #374151; margin-bottom: 8px; line-height: 1.4; }
+        .quote-author { font-size: 0.85rem; font-weight: 600; color: #10b981; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .app-container { 
+            background-color: var(--card-bg); 
+            backdrop-filter: blur(12px); 
+            -webkit-backdrop-filter: blur(12px); 
+            padding: 30px 25px; 
+            border-radius: 16px; 
+            border: 1px solid var(--card-border); 
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.15); 
+        }
+
+        h2 { margin-top: 0; text-align: center; font-size: 1.6rem; letter-spacing: 0.5px; color: #111827; }
+        h3 { margin-top: 0; font-size: 1.1rem; margin-bottom: 10px; border-bottom: 1px solid #e5e7eb; padding-bottom: 10px; color: #374151;}
+        p.subtitle { text-align: center; color: var(--text-muted); font-size: 0.95rem; margin-bottom: 25px; line-height: 1.4; }
+        
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.9rem; color: #374151; }
+        
+        input[type="text"], textarea { 
+            width: 100%; 
+            padding: 14px; 
+            background-color: var(--input-bg); 
+            border: 2px solid var(--input-border); 
+            border-radius: 10px; 
+            color: var(--text-main); 
+            font-size: 1rem; 
+            font-family: inherit; 
+            box-sizing: border-box; 
+            transition: all 0.3s ease; 
+        }
+        
+        .is-encrypted { font-family: monospace !important; color: #4f46e5 !important; font-size: 0.85rem !important; background-color: #eef2ff !important; border-color: #c7d2fe !important; }
+        input::placeholder, textarea::placeholder { color: #9ca3af; }
+        input[type="text"]:focus, textarea:focus { outline: none; border-color: var(--input-focus); box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15); background-color: #ffffff; }
+        textarea { resize: vertical; min-height: 120px; max-height: 500px; overflow-y: auto; }
+        
+        ::-webkit-scrollbar { width: 8px; } 
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); border-radius: 4px; } 
+        ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.3); }
 
         .button-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; }
-        button { flex: 1; padding: 14px; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease; letter-spacing: 0.5px; }
+        button { flex: 1; padding: 14px; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease; letter-spacing: 0.3px; }
         button:active { transform: scale(0.97); }
         button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
-        .btn-send { background: var(--primary-gradient); color: white; border: 1px solid rgba(147, 51, 234, 0.4); box-shadow: 0 4px 15px var(--primary-glow); }
-        .btn-send:hover:not(:disabled) { background: var(--primary-hover); box-shadow: 0 6px 20px rgba(147, 51, 234, 0.6); }
-        .btn-retract { background: var(--danger-gradient); color: white; border: 1px solid rgba(220, 38, 38, 0.4); box-shadow: 0 4px 15px var(--danger-glow); display: none;}
-        .btn-retract:hover:not(:disabled) { background: var(--danger-hover); box-shadow: 0 6px 20px rgba(220, 38, 38, 0.6); }
-        .btn-update { background: var(--edit-gradient); color: white; border: 1px solid rgba(217, 119, 6, 0.4); box-shadow: 0 4px 15px rgba(180, 83, 9, 0.4); display: none;}
-        .btn-update:hover:not(:disabled) { background: var(--edit-hover); box-shadow: 0 6px 20px rgba(217, 119, 6, 0.6); }
-        .btn-cancel { background-color: transparent; color: var(--text-muted); border: 1px solid rgba(255,255,255,0.2); }
-        .btn-cancel:hover:not(:disabled) { background-color: rgba(255, 255, 255, 0.05); color: white; border-color: rgba(255,255,255,0.4); }
+        .btn-send { background: var(--primary-gradient); color: white; box-shadow: 0 4px 12px var(--primary-shadow); }
+        .btn-send:hover:not(:disabled) { background: var(--primary-hover); box-shadow: 0 6px 16px rgba(16, 185, 129, 0.5); }
+        
+        .btn-retract { background: var(--danger-gradient); color: white; box-shadow: 0 4px 12px var(--danger-shadow); display: none;}
+        .btn-retract:hover:not(:disabled) { background: var(--danger-hover); box-shadow: 0 6px 16px rgba(239, 68, 68, 0.5); }
+        
+        .btn-update { background: var(--edit-gradient); color: white; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4); display: none;}
+        .btn-update:hover:not(:disabled) { background: var(--edit-hover); box-shadow: 0 6px 16px rgba(59, 130, 246, 0.5); }
+        
+        .btn-cancel { background-color: white; color: #4b5563; border: 1px solid #d1d5db; }
+        .btn-cancel:hover:not(:disabled) { background-color: #f3f4f6; color: #1f2937; }
 
-        .notification { display: none; text-align: center; margin-top: 20px; padding: 12px; border-radius: 8px; font-size: 0.95rem; font-weight: 600; backdrop-filter: blur(5px); }
-        .success { background-color: rgba(6, 78, 59, 0.7); border: 1px solid #047857; color: #34d399; display: block; }
-        .error { background-color: rgba(127, 29, 29, 0.7); border: 1px solid #b91c1c; color: #f87171; display: block; }
+        .notification { display: none; text-align: center; margin-top: 20px; padding: 12px; border-radius: 8px; font-size: 0.95rem; font-weight: 600; line-height: 1.4; }
+        .success { background-color: #d1fae5; border: 1px solid #34d399; color: #065f46; display: block; }
+        .error { background-color: #fee2e2; border: 1px solid #f87171; color: #991b1b; display: block; }
+        .warning { background-color: #fef3c7; border: 1px solid #fbbf24; color: #92400e; display: block; }
 
         .history-container { max-height: 200px; overflow-y: auto; padding-right: 5px; }
-        .history-item { display: flex; align-items: center; padding: 12px 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.06); cursor: pointer; transition: background-color 0.2s, transform 0.1s; border-radius: 6px; }
-        .history-item:hover { background-color: rgba(255, 255, 255, 0.08); transform: translateX(3px); }
+        .history-item { display: flex; align-items: center; padding: 12px 10px; border-bottom: 1px solid #e5e7eb; cursor: pointer; transition: background-color 0.2s, transform 0.1s; border-radius: 6px; }
+        .history-item:hover { background-color: rgba(0, 0, 0, 0.03); transform: translateX(3px); }
         .history-item:last-child { border-bottom: none; }
-        .history-item-date { color: #9ca3af; font-family: monospace; font-size: 0.8rem; margin-right: 12px; flex-shrink: 0; }
-        .history-item-title { color: #e5e7eb; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1; }
+        .history-item-date { color: #6b7280; font-family: monospace; font-size: 0.8rem; margin-right: 12px; flex-shrink: 0; }
+        .history-item-title { color: #1f2937; font-size: 0.95rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1; }
         .no-history { text-align: center; color: var(--text-muted); font-size: 0.9rem; font-style: italic; padding: 10px 0; }
 		
-		/* Increased max-height for novel-writers */
-textarea { 
-    resize: vertical; 
-    min-height: 120px; 
-    max-height: 500px; /* Increased from 300px */
-    overflow-y: auto; 
-}
-
-/* Character counter styling */
-.char-counter {
-    text-align: right;
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    margin-top: 6px;
-    font-family: monospace;
-    transition: color 0.3s ease;
-}
-
-.char-counter.warning {
-    color: #d97706; /* Warning orange */
-}
-
-.char-counter.danger {
-    color: #f87171; /* Danger red */
-}
+        .char-counter { text-align: right; font-size: 0.8rem; color: var(--text-muted); margin-top: 6px; font-family: monospace; transition: color 0.3s ease; }
+        .char-counter.warning { color: #d97706; }
+        .char-counter.danger { color: #ef4444; }
     </style>
 </head>
 <body>
 
     <div class="main-wrapper">
+        
+        <!-- Thought of the Day Card -->
+        <div class="quote-card" id="quoteCard">
+            <div class="quote-text" id="quoteText">"Loading a positive thought..."</div>
+            <div class="quote-author" id="quoteAuthor"></div>
+        </div>
+
+        <!-- Main Input App -->
         <div class="app-container">
-            <h2 id="formHeader">Whisper...</h2>
-            <p class="subtitle" id="formSubtitle">Anonymous message app</p>
+            <h2 id="formHeader">Share a Note</h2>
+            <p class="subtitle" id="formSubtitle">Your voice matters. Send ideas, feedback, or a kind word securely and anonymously.</p>
 
             <form id="messageForm">
                 <div class="form-group">
-                    <label for="title">Subject</label>
-                    <input type="text" id="title" placeholder="Enter a brief subject..." required>
+                    <label for="title">What's on your mind?</label>
+                    <input type="text" id="title" placeholder="A brief subject..." required>
                 </div>
                 <div class="form-group">
-					<label for="message">Message</label>
+					<label for="message">Your Message</label>
 					<textarea id="message" placeholder="Say something nice here..." maxlength="35000" required></textarea>
 					<div id="charCounter" class="char-counter">0 / 35000</div>
 				</div>
                 <div class="button-group">
-                    <button type="submit" class="btn-send" id="sendBtn">Securely Send</button>
-                    <button type="button" class="btn-retract" id="retractBtn">Retract Message</button>
-                    <button type="submit" class="btn-update" id="updateBtn">Encrypt & Update</button>
+                    <button type="submit" class="btn-send" id="sendBtn" disabled>Loading AI Helper...</button>
+                    <button type="button" class="btn-retract" id="retractBtn">Take Back Message</button>
+                    <button type="submit" class="btn-update" id="updateBtn">Update Securely</button>
                     <button type="button" class="btn-cancel" id="cancelBtn">Clear</button>
                 </div>
             </form>
             <div id="notification" class="notification"></div>
         </div>
 
+        <!-- Local History Logs -->
         <div class="app-container" id="historySection">
-            <h3>Transmission Logs</h3>
+            <h3>Your Previous Messages</h3>
             <div class="history-container" id="historyList"></div>
         </div>
     </div>
@@ -142,6 +194,23 @@ CI1cctQ6EKlI888eG6l1tRo/Ajr07k5Dv1sC7i7P5i4Z4gINBsDZ7pniOxNIeiGp
 odZ0n0tDfcF9kPCZewIDAQAB
 -----END PUBLIC KEY-----`;
 
+        // --- Positive Quotes Logic ---
+        const quotes = [
+            { text: "No act of kindness, no matter how small, is ever wasted.", author: "Aesop" },
+            { text: "You are never too old to set another goal or to dream a new dream.", author: "C.S. Lewis" },
+            { text: "Happiness is not something ready made. It comes from your own actions.", author: "Dalai Lama" },
+            { text: "Try to be a rainbow in someone's cloud.", author: "Maya Angelou" },
+            { text: "What you get by achieving your goals is not as important as what you become by achieving your goals.", author: "Zig Ziglar" },
+            { text: "The best way to predict the future is to create it.", author: "Abraham Lincoln" },
+            { text: "Keep your face always toward the sunshine—and shadows will fall behind you.", author: "Walt Whitman" },
+            { text: "Believe you can and you're halfway there.", author: "Theodore Roosevelt" }
+        ];
+
+        const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+        document.getElementById('quoteText').innerText = `"${randomQuote.text}"`;
+        document.getElementById('quoteAuthor').innerText = `- ${randomQuote.author}`;
+
+        // --- DOM Elements ---
         const form = document.getElementById('messageForm');
         const titleInput = document.getElementById('title');
         const messageInput = document.getElementById('message');
@@ -152,23 +221,68 @@ odZ0n0tDfcF9kPCZewIDAQAB
         const notification = document.getElementById('notification');
         const historyList = document.getElementById('historyList');
 
-// --- Character Limit Logic ---
-const MAX_CHARS = 35000;
-const charCounter = document.getElementById('charCounter');
+        // --- AI Moderation (Extreme Toxicity) ---
+        let aiModel = null;
+        toxicity.load(0.8).then(model => {
+            aiModel = model;
+            sendBtn.innerText = 'Send Securely';
+            sendBtn.disabled = false; 
+        }).catch(err => {
+            console.error("Failed to load AI Moderation Model", err);
+            sendBtn.innerText = 'Send Securely';
+            sendBtn.disabled = false; 
+        });
 
-messageInput.addEventListener('input', function() {
-    const currentLength = this.value.length;
-    charCounter.innerText = `${currentLength} / ${MAX_CHARS}`;
-    
-    // Add visual warnings as they approach the limit
-    if (currentLength >= MAX_CHARS) {
-        charCounter.className = 'char-counter danger';
-    } else if (currentLength >= MAX_CHARS * 0.9) { // Warn at 90% capacity (31,500 chars)
-        charCounter.className = 'char-counter warning';
-    } else {
-        charCounter.className = 'char-counter';
-    }
-});
+        // --- NEW: Tone & Kindness Lexicon Filter (Workplace Venting) ---
+        function containsNegativeTone(text) {
+            const lowerText = text.toLowerCase();
+            
+            // Phrases often used in workplace hostility/venting
+            const hostilePhrases = [
+                "i hate", "we hate", "can't stand", "cannot stand",
+                "cannot work with", "can't work with", "never want to see",
+                "sick of", "tired of", "fire him", "fire her", "get rid of"
+            ];
+            
+            for (let phrase of hostilePhrases) {
+                if (lowerText.includes(phrase)) {
+                    return `"${phrase}"`;
+                }
+            }
+
+            // Strong negative adjectives often used in personal attacks
+            const negativeAdjectives = [
+                "unpleasant", "argumentative", "lazy", "incompetent", "useless", 
+                "stupid", "idiot", "terrible", "awful", "toxic", "aggressive",
+                "rude", "arrogant", "obnoxious", "nasty", "mean", "pathetic"
+            ];
+            
+            // Check if any of these words exist as standalone words in the text
+            const words = lowerText.match(/\b(\w+)\b/g) || [];
+            for (let word of words) {
+                if (negativeAdjectives.includes(word)) {
+                    return `"${word}"`;
+                }
+            }
+            return null;
+        }
+
+        // --- Character Limit Logic ---
+        const MAX_CHARS = 35000;
+        const charCounter = document.getElementById('charCounter');
+
+        messageInput.addEventListener('input', function() {
+            const currentLength = this.value.length;
+            charCounter.innerText = `${currentLength} / ${MAX_CHARS}`;
+            
+            if (currentLength >= MAX_CHARS) {
+                charCounter.className = 'char-counter danger';
+            } else if (currentLength >= MAX_CHARS * 0.9) { 
+                charCounter.className = 'char-counter warning';
+            } else {
+                charCounter.className = 'char-counter';
+            }
+        });
 
         let messageHistory = JSON.parse(localStorage.getItem('anonMessageHistory')) || [];
         let editingId = null; 
@@ -176,7 +290,7 @@ messageInput.addEventListener('input', function() {
         function generateId() { return crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15); }
         function setButtonsDisabled(state) { sendBtn.disabled = state; retractBtn.disabled = state; updateBtn.disabled = state; cancelBtn.disabled = state; }
 
-        form.addEventListener('submit', function(e) {
+        form.addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const rawTitle = titleInput.value;
@@ -184,36 +298,69 @@ messageInput.addEventListener('input', function() {
             const action = editingId ? 'edit' : 'create';
             const activeBtn = action === 'edit' ? updateBtn : sendBtn;
             
-            activeBtn.innerText = 'Applying Public Key...';
+            activeBtn.innerText = 'Checking tone...';
             setButtonsDisabled(true);
+
+            // --- 1. KINDNESS & TONE CHECK (Catches "I hate Richard", "unpleasant", etc.) ---
+            const toneFlag = containsNegativeTone(rawMessage) || containsNegativeTone(rawTitle);
+            if (toneFlag) {
+                showNotification(`Let's keep things positive! Our system noticed a harsh phrase (${toneFlag}). Could you kindly rephrase this into constructive feedback?`, 'warning');
+                resetFormState();
+                titleInput.value = rawTitle;
+                messageInput.value = rawMessage;
+                return;
+            }
+
+            // --- 2. AI EXTREME TOXICITY CHECK (Catches profanity, slurs, threats) ---
+            if (aiModel) {
+                try {
+                    const textToAnalyze = rawMessage.length > 1500 ? rawMessage.substring(0, 1500) : rawMessage;
+                    const predictions = await aiModel.classify([textToAnalyze]);
+                    let toxicFlags = [];
+
+                    predictions.forEach(prediction => {
+                        if (prediction.results[0].match === true) {
+                            toxicFlags.push(prediction.label.replace('_', ' '));
+                        }
+                    });
+
+                    if (toxicFlags.length > 0) {
+                        showNotification(`Let's keep things safe and positive! Our AI flagged this text for: ${toxicFlags.join(', ')}. Please rephrase.`, 'warning');
+                        resetFormState();
+                        titleInput.value = rawTitle;
+                        messageInput.value = rawMessage;
+                        return; 
+                    }
+                } catch (error) {
+                    console.error("AI Evaluation failed:", error);
+                }
+            }
+
+            // --- 3. ENCRYPTION & SENDING ---
+            activeBtn.innerText = 'Securing Data...';
             notification.className = 'notification';
 
-            // --- HYBRID ENCRYPTION START ---
-            
-            // 1. Generate a temporary, random AES passcode for this specific message
+            // Generate a temporary, random AES passcode
             const tempPasscode = crypto.randomUUID().replace(/-/g, '') + Date.now().toString();
 
-            // 2. Encrypt the large text using the temporary passcode
+            // Encrypt text
             const encryptedTitle = CryptoJS.AES.encrypt(rawTitle, tempPasscode).toString();
             const encryptedMessage = CryptoJS.AES.encrypt(rawMessage, tempPasscode).toString();
 
-            // 3. Encrypt the temporary passcode using the RSA Public Key
+            // Encrypt AES key with RSA Public Key
             const rsa = new JSEncrypt();
             rsa.setPublicKey(PUBLIC_KEY);
             const encryptedPasscode = rsa.encrypt(tempPasscode);
 
-            // --- HYBRID ENCRYPTION END ---
-
-            // Visual UI Effect
-            titleInput.value = encryptedTitle;
-            messageInput.value = encryptedMessage;
+            // Visual UI Effect 
+            titleInput.value = "Encrypted: " + encryptedTitle.substring(0, 30) + "...";
+            messageInput.value = "Encrypted: " + encryptedMessage.substring(0, 50) + "...";
             titleInput.classList.add('is-encrypted');
             messageInput.classList.add('is-encrypted');
 
             const messageId = editingId ? editingId : generateId();
             const timestamp = new Date().toISOString();
 
-            // Send encrypted data to Google
             const payload = {
                 action: action,
                 id: messageId,
@@ -223,7 +370,7 @@ messageInput.addEventListener('input', function() {
             };
 
             setTimeout(() => {
-                activeBtn.innerText = 'Transmitting...';
+                activeBtn.innerText = 'Sending...';
                 
                 fetch(GOOGLE_APP_SCRIPT_URL, {
                     method: 'POST', mode: 'no-cors',
@@ -232,7 +379,7 @@ messageInput.addEventListener('input', function() {
                 }).then(() => {
                     if (action === 'create') {
                         messageHistory.unshift({ id: messageId, title: rawTitle, message: rawMessage, timestamp });
-                        showNotification('Data securely encrypted and sent!', 'success');
+                        showNotification('Thank you! Your message was securely sent.', 'success');
                     } else if (action === 'edit') {
                         const index = messageHistory.findIndex(m => m.id === editingId);
                         if (index > -1) {
@@ -240,11 +387,11 @@ messageInput.addEventListener('input', function() {
                             messageHistory[index].message = rawMessage;
                             messageHistory[index].timestamp = timestamp;
                         }
-                        showNotification('Record updated securely!', 'success');
+                        showNotification('Your message has been updated successfully.', 'success');
                     }
                     saveAndRender(); resetFormState();
                 }).catch(() => {
-                    showNotification('Network error. Failed to transmit.', 'error');
+                    showNotification('Network error. Failed to send your message.', 'error');
                     resetFormState();
                 });
             }, 800);
@@ -254,18 +401,20 @@ messageInput.addEventListener('input', function() {
             const msg = messageHistory.find(m => m.id === id);
             if (!msg) return;
             titleInput.value = msg.title; messageInput.value = msg.message; editingId = id;
-            document.getElementById('formHeader').innerText = "Modify Log";
-            document.getElementById('formSubtitle').innerText = "Update or obliterate this transmission.";
+            
+            document.getElementById('formHeader').innerText = "Update Your Note";
+            document.getElementById('formSubtitle').innerText = "You can safely change your message or remove it completely.";
+            
             sendBtn.style.display = 'none'; retractBtn.style.display = 'block'; updateBtn.style.display = 'block'; cancelBtn.innerText = 'Cancel';
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         retractBtn.addEventListener('click', function() {
             if (!editingId) return;
-            if (!confirm("Are you sure you want to permanently retract and obliterate this message?")) return;
+            if (!confirm("Are you sure you want to take this message back? It will be removed from our system.")) return;
 
             const idToRetract = editingId;
-            setButtonsDisabled(true); retractBtn.innerText = 'Purging...';
+            setButtonsDisabled(true); retractBtn.innerText = 'Removing...';
 
             const payload = { action: 'delete', id: idToRetract, title: '', message: '', passcode: '' };
 
@@ -277,15 +426,15 @@ messageInput.addEventListener('input', function() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             }).then(() => {
-                showNotification('Record purged from server.', 'success'); resetFormState();
-            }).catch(() => { showNotification('Failed to connect to server.', 'error'); });
+                showNotification('Your message was successfully removed.', 'success'); resetFormState();
+            }).catch(() => { showNotification('Failed to connect. Please try again.', 'error'); });
         });
 
         cancelBtn.addEventListener('click', resetFormState);
 
         function renderHistory() {
             historyList.innerHTML = '';
-            if (messageHistory.length === 0) { historyList.innerHTML = '<div class="no-history">No local transmission logs found.</div>'; return; }
+            if (messageHistory.length === 0) { historyList.innerHTML = '<div class="no-history">No previous messages found on this device.</div>'; return; }
             messageHistory.forEach(msg => {
                 const dateObj = new Date(msg.timestamp);
                 const dateStr = dateObj.toLocaleDateString('en-GB', {day: '2-digit', month: '2-digit', year: '2-digit'}) + ' ' + dateObj.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
@@ -301,14 +450,22 @@ messageInput.addEventListener('input', function() {
         function resetFormState() {
             form.reset(); editingId = null;
             titleInput.classList.remove('is-encrypted'); messageInput.classList.remove('is-encrypted');
-            document.getElementById('formHeader').innerText = "Whisper..."; //document.getElementById('formSubtitle').innerText = "Securely transmit your message.";
+            
+            document.getElementById('formHeader').innerText = "Share a Note"; 
+            document.getElementById('formSubtitle').innerText = "Your voice matters. Send ideas, feedback, or a kind word securely and anonymously.";
+            
             sendBtn.style.display = 'block'; retractBtn.style.display = 'none'; updateBtn.style.display = 'none'; cancelBtn.innerText = "Clear";
-            sendBtn.innerText = "Send Securely"; updateBtn.innerText = "Update";
-            setButtonsDisabled(false);
+            
+            sendBtn.innerText = aiModel ? "Send Securely" : "Loading AI Helper...";
+            setButtonsDisabled(aiModel ? false : true);
+            updateBtn.innerText = "Update Securely";
+            
+            charCounter.innerText = `0 / ${MAX_CHARS}`;
+            charCounter.className = 'char-counter';
         }
 
         function escapeHTML(str) { return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag])); }
-        function showNotification(msg, type) { notification.innerText = msg; notification.className = `notification ${type}`; setTimeout(() => { notification.style.display = 'none'; notification.className = 'notification'; }, 4000); }
+        function showNotification(msg, type) { notification.innerText = msg; notification.className = `notification ${type}`; setTimeout(() => { notification.style.display = 'none'; notification.className = 'notification'; }, 8000); }
 
         renderHistory();
     </script>
